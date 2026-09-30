@@ -36,11 +36,11 @@ export default function CurrentWeather({ city, current, unit }: CurrentWeatherPr
         <div className="flex items-center gap-4">
           <span
             aria-label={`Ícone: ${condition.label}`}
-            className="text-sm font-medium text-accent-400"
+            className="text-5xl leading-none"
             data-weather-icon={condition.icon}
             role="img"
           >
-            {condition.icon}
+            {condition.symbol}
           </span>
           <div>
             <p className="text-5xl font-bold tracking-tight text-white sm:text-6xl">

@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react';
+import { useState } from 'react';
 
 import CurrentWeather from './components/CurrentWeather';
 import ForecastList from './components/ForecastList';
@@ -7,74 +7,15 @@ import EmptyState from './components/states/EmptyState';
 import ErrorState from './components/states/ErrorState';
 import LoadingState from './components/states/LoadingState';
 import UnitToggle from './components/UnitToggle';
-import type { Unit, WeatherData } from './types/weather';
-import { mockWeatherData } from './types/weather';
-
-type ViewState = 'idle' | 'loading' | 'empty' | 'error' | 'success';
-
-const mockResponseDelay = 350;
+import { useWeather } from './hooks/useWeather';
+import type { Unit } from './types/weather';
 
 export default function App() {
   const [unit, setUnit] = useState<Unit>('celsius');
-  const [viewState, setViewState] = useState<ViewState>('idle');
-  const [weather, setWeather] = useState<WeatherData | null>(null);
-  const [lastQuery, setLastQuery] = useState('');
-  const requestId = useRef(0);
-  const responseTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
-
-  useEffect(() => {
-    return () => {
-      if (responseTimer.current !== null) {
-        clearTimeout(responseTimer.current);
-      }
-    };
-  }, []);
-
-  function handleSearch(city: string) {
-    const query = city.trim();
-    if (!query) {
-      return;
-    }
-
-    requestId.current += 1;
-    const currentRequestId = requestId.current;
-    setLastQuery(query);
-    setViewState('loading');
-    setWeather(null);
-
-    if (responseTimer.current !== null) {
-      clearTimeout(responseTimer.current);
-    }
-
-    responseTimer.current = setTimeout(() => {
-      if (currentRequestId !== requestId.current) {
-        return;
-      }
-
-      const normalizedQuery = query.toLocaleLowerCase('pt-BR');
-      if (normalizedQuery === 'erro') {
-        setViewState('error');
-        return;
-      }
-
-      if (normalizedQuery === 'vazio') {
-        setViewState('empty');
-        return;
-      }
-
-      setWeather({
-        ...mockWeatherData,
-        city: {
-          ...mockWeatherData.city,
-          name: query,
-        },
-      });
-      setViewState('success');
-    }, mockResponseDelay);
-  }
+  const { data, error, retry, search, status } = useWeather();
 
   function renderContent() {
-    switch (viewState) {
+    switch (status) {
       case 'loading':
         return <LoadingState />;
       case 'empty':
@@ -86,16 +27,13 @@ export default function App() {
         );
       case 'error':
         return (
-          <ErrorState
-            message="Não foi possível consultar os dados agora. Tente novamente."
-            onRetry={() => handleSearch(lastQuery)}
-          />
+          <ErrorState message={error ?? 'Não foi possível consultar o clima.'} onRetry={retry} />
         );
       case 'success':
-        return weather ? (
+        return data ? (
           <div className="space-y-8">
-            <CurrentWeather city={weather.city} current={weather.current} unit={unit} />
-            <ForecastList days={weather.days} timezone={weather.timezone} unit={unit} />
+            <CurrentWeather city={data.city} current={data.current} unit={unit} />
+            <ForecastList days={data.days} timezone={data.timezone} unit={unit} />
           </div>
         ) : null;
       case 'idle':
@@ -118,7 +56,7 @@ export default function App() {
             </h1>
             <UnitToggle onChange={setUnit} unit={unit} />
           </div>
-          <SearchBar disabled={viewState === 'loading'} onSearch={handleSearch} />
+          <SearchBar disabled={status === 'loading'} onSearch={search} />
         </div>
       </header>
 

@@ -1,9 +1,31 @@
-export interface WeatherCondition {
+interface WeatherConditionDefinition {
   label: string;
   icon: string;
 }
 
-const weatherConditions: Record<number, WeatherCondition> = {
+export interface WeatherCondition extends WeatherConditionDefinition {
+  symbol: string;
+}
+
+const weatherSymbols: Record<string, string> = {
+  clear: '☀️',
+  'mostly-clear': '🌤️',
+  'partly-cloudy': '⛅',
+  cloudy: '☁️',
+  fog: '🌫️',
+  drizzle: '🌦️',
+  'freezing-drizzle': '🌧️',
+  rain: '🌧️',
+  'freezing-rain': '🌧️',
+  snow: '❄️',
+  'rain-showers': '🌦️',
+  'snow-showers': '🌨️',
+  thunderstorm: '⛈️',
+  'thunderstorm-hail': '⛈️',
+  unknown: '🌡️',
+};
+
+const weatherConditions: Record<number, WeatherConditionDefinition> = {
   0: { label: 'Céu limpo', icon: 'clear' },
   1: { label: 'Principalmente limpo', icon: 'mostly-clear' },
   2: { label: 'Parcialmente nublado', icon: 'partly-cloudy' },
@@ -35,10 +57,10 @@ const weatherConditions: Record<number, WeatherCondition> = {
 };
 
 export function getWeatherCondition(weatherCode: number): WeatherCondition {
-  return (
-    weatherConditions[weatherCode] ?? {
-      label: 'Condição não disponível',
-      icon: 'unknown',
-    }
-  );
+  const condition = weatherConditions[weatherCode] ?? {
+    label: 'Condição não disponível',
+    icon: 'unknown',
+  };
+
+  return { ...condition, symbol: weatherSymbols[condition.icon] };
 }

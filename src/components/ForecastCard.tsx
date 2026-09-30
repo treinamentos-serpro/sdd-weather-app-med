@@ -24,11 +24,11 @@ export default function ForecastCard({ day, unit, timezone }: ForecastCardProps)
       <div className="mt-4 flex flex-1 flex-col items-center justify-center gap-2 text-center">
         <span
           aria-label={`Ícone: ${condition.label}`}
-          className="text-sm font-medium text-accent-400"
+          className="text-4xl leading-none"
           data-weather-icon={condition.icon}
           role="img"
         >
-          {condition.icon}
+          {condition.symbol}
         </span>
         <p className="text-sm text-white/70">{condition.label}</p>
       </div>
