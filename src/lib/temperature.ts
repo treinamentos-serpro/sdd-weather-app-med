@@ -4,7 +4,11 @@ export function convertTemperature(valueCelsius: number, unit: Unit): number {
   return unit === 'fahrenheit' ? (valueCelsius * 9) / 5 + 32 : valueCelsius;
 }
 
+export function unitLabel(unit: Unit): string {
+  return unit === 'fahrenheit' ? '°F' : '°C';
+}
+
 export function formatTemperature(valueCelsius: number, unit: Unit): string {
   const value = Math.round(convertTemperature(valueCelsius, unit));
-  return `${value}°${unit === 'fahrenheit' ? 'F' : 'C'}`;
+  return `${value}${unitLabel(unit)}`;
 }

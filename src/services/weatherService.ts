@@ -95,6 +95,14 @@ function isNumberArray(value: unknown): value is number[] {
   );
 }
 
+function isNullableNumberArray(value: unknown): value is Array<number | null> {
+  return (
+    Array.isArray(value) &&
+    value.length === 5 &&
+    value.every((item) => item === null || (typeof item === 'number' && Number.isFinite(item)))
+  );
+}
+
 function isStringArray(value: unknown): value is string[] {
   return (
     Array.isArray(value) && value.length === 5 && value.every((item) => typeof item === 'string')
@@ -214,13 +222,12 @@ function mapDaily(daily: ForecastDaily): ForecastDay[] | null {
     return null;
   }
 
-  const precipitation = Array.isArray(daily.precipitation_probability_max)
-    ? daily.precipitation_probability_max
-    : [];
+  const precipitation = daily.precipitation_probability_max;
 
   if (
-    precipitation.length !== 0 &&
-    (!isNumberArray(precipitation) || precipitation.length !== dates.length)
+    precipitation !== undefined &&
+    precipitation !== null &&
+    !isNullableNumberArray(precipitation)
   ) {
     return null;
   }
@@ -230,7 +237,8 @@ function mapDaily(daily: ForecastDaily): ForecastDay[] | null {
     weatherCode: weatherCodes[index],
     minimumCelsius: minimums[index],
     maximumCelsius: maximums[index],
-    precipitationProbability: precipitation.length === 5 ? precipitation[index] : undefined,
+    precipitationProbability:
+      precipitation && precipitation[index] !== null ? precipitation[index] : 0,
   }));
 }
 
