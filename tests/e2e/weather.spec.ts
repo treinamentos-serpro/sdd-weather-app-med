@@ -35,6 +35,7 @@ async function mockWeatherApi(
       },
     ],
   },
+  forecastBody: object = forecastResponse,
 ) {
   await page.route('**/geocoding-api.open-meteo.com/**', (route) =>
     route.fulfill({
@@ -46,7 +47,7 @@ async function mockWeatherApi(
   await page.route('**/api.open-meteo.com/**', (route) =>
     route.fulfill({
       contentType: 'application/json',
-      body: JSON.stringify(forecastResponse),
+      body: JSON.stringify(forecastBody),
       status: 200,
     }),
   );
@@ -78,6 +79,16 @@ test('exibe estado vazio quando o geocoding não retorna results', async ({ page
   await searchForCity(page);
 
   await expect(page.getByRole('heading', { name: 'Nenhuma cidade encontrada' })).toBeVisible();
+});
+
+test('exibe erro quando o forecast está incompleto', async ({ page }) => {
+  await mockWeatherApi(page, undefined, { current: {} });
+  await page.goto('/');
+
+  await searchForCity(page);
+
+  await expect(page.getByRole('alert')).toContainText('dados inválidos');
+  await expect(page.getByRole('button', { name: 'Tentar novamente' })).toBeVisible();
 });
 
 test('mantém o fluxo principal funcional em viewport mobile', async ({ page }) => {

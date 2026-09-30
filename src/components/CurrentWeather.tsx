@@ -9,7 +9,7 @@ interface CurrentWeatherProps {
 }
 
 function formatMetric(value: number | undefined, suffix: string): string {
-  return value === undefined ? 'Não disponível' : `${value} ${suffix}`;
+  return value === undefined || !Number.isFinite(value) ? '—' : `${value} ${suffix}`;
 }
 
 export default function CurrentWeather({ city, current, unit }: CurrentWeatherProps) {

@@ -1,6 +1,11 @@
 import { useEffect, useRef, useState } from 'react';
 
-import { getWeather, searchCities, WeatherServiceError } from '../services/weatherService';
+import {
+  getWeather,
+  searchCities,
+  WeatherServiceError,
+  type WeatherServiceErrorKind,
+} from '../services/weatherService';
 import type { City, WeatherData } from '../types/weather';
 
 export type WeatherStatus = 'idle' | 'loading' | 'success' | 'error' | 'empty';
@@ -40,9 +45,24 @@ export function useWeather() {
   }
 
   function getErrorMessage(error: unknown): string {
-    return error instanceof WeatherServiceError
-      ? error.message
-      : 'Não foi possível consultar o clima agora.';
+    if (!(error instanceof WeatherServiceError)) {
+      return 'Não foi possível conectar ao serviço de clima. Verifique sua conexão e tente novamente.';
+    }
+
+    const messages: Record<WeatherServiceErrorKind, string> = {
+      cancelled: 'A consulta foi cancelada. Tente novamente.',
+      http:
+        error.status === 429
+          ? 'Muitas solicitações no momento. Aguarde um pouco e tente novamente.'
+          : 'O serviço de clima está indisponível no momento. Tente novamente em instantes.',
+      'invalid-payload': 'O serviço retornou dados inválidos. Tente novamente mais tarde.',
+      network:
+        'Não foi possível conectar ao serviço de clima. Verifique sua conexão e tente novamente.',
+      timeout: 'A consulta demorou mais que o esperado. Verifique sua conexão e tente novamente.',
+      unknown: error.message || 'Não foi possível consultar o clima agora.',
+    };
+
+    return messages[error.kind] ?? (error.message || 'Não foi possível consultar o clima agora.');
   }
 
   async function search(name: string) {

@@ -55,6 +55,17 @@ describe('searchCities', () => {
     expect(requestUrl.searchParams.get('format')).toBe('json');
   });
 
+  it('encodes special characters in the geocoding query', async () => {
+    const fetchMock = vi.fn().mockResolvedValue(new Response(JSON.stringify({ results: [] })));
+    vi.stubGlobal('fetch', fetchMock);
+
+    await searchCities('São Paulo & Centro');
+
+    const requestUrl = new URL(fetchMock.mock.calls[0][0]);
+    expect(requestUrl.searchParams.get('name')).toBe('São Paulo & Centro');
+    expect(requestUrl.toString()).toContain('S%C3%A3o%20Paulo%20%26%20Centro');
+  });
+
   it('returns an empty list when results is absent', async () => {
     vi.stubGlobal('fetch', vi.fn().mockResolvedValue(new Response('{}', { status: 200 })));
 

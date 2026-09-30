@@ -42,4 +42,16 @@ describe('unit conversion in the UI', () => {
     expect(screen.getByText('32°F')).toBeInTheDocument();
     expect(screen.getByRole('button', { name: '°F' })).toHaveAttribute('aria-pressed', 'true');
   });
+
+  it('shows a safe fallback when optional current metrics are absent', () => {
+    render(
+      <CurrentWeather
+        city={city}
+        current={{ time: '2026-09-30T14:00', temperatureCelsius: 21, weatherCode: 0 }}
+        unit="celsius"
+      />,
+    );
+
+    expect(screen.getAllByText('—')).toHaveLength(4);
+  });
 });

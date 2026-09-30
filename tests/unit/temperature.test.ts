@@ -20,6 +20,10 @@ describe('temperature utilities', () => {
     expect(formatTemperature(0, 'fahrenheit')).toBe('32°F');
   });
 
+  it('uses a dash for an invalid display value', () => {
+    expect(formatTemperature(Number.NaN, 'celsius')).toBe('—');
+  });
+
   it('returns the label for each unit', () => {
     expect(unitLabel('celsius')).toBe('°C');
     expect(unitLabel('fahrenheit')).toBe('°F');

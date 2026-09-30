@@ -4,13 +4,23 @@ const GEOCODING_URL = 'https://geocoding-api.open-meteo.com/v1/search';
 const FORECAST_URL = 'https://api.open-meteo.com/v1/forecast';
 const REQUEST_TIMEOUT_MS = 10_000;
 
+export type WeatherServiceErrorKind =
+  | 'cancelled'
+  | 'http'
+  | 'invalid-payload'
+  | 'network'
+  | 'timeout'
+  | 'unknown';
+
 export class WeatherServiceError extends Error {
   readonly status?: number;
+  readonly kind: WeatherServiceErrorKind;
 
-  constructor(message: string, status?: number) {
+  constructor(message: string, status?: number, kind: WeatherServiceErrorKind = 'unknown') {
     super(message);
     this.name = 'WeatherServiceError';
     this.status = status;
+    this.kind = kind;
   }
 }
 
@@ -124,13 +134,20 @@ function mapCity(result: GeocodingResult): City {
 export async function fetchWithTimeout(url: string, signal?: AbortSignal): Promise<Response> {
   const controller = new AbortController();
   let didTimeout = false;
+  let didCancel = signal?.aborted ?? false;
   const timeoutId = setTimeout(() => {
     didTimeout = true;
     controller.abort();
   }, REQUEST_TIMEOUT_MS);
-  const abortRequest = () => controller.abort();
+  const abortRequest = () => {
+    didCancel = true;
+    controller.abort();
+  };
 
   signal?.addEventListener('abort', abortRequest, { once: true });
+  if (didCancel) {
+    controller.abort();
+  }
 
   try {
     return await fetch(url, { signal: controller.signal });
@@ -139,11 +156,15 @@ export async function fetchWithTimeout(url: string, signal?: AbortSignal): Promi
       throw error;
     }
 
-    if (didTimeout || (error instanceof DOMException && error.name === 'AbortError')) {
-      throw new WeatherServiceError('A requisição demorou demais.');
+    if (didTimeout) {
+      throw new WeatherServiceError('A requisição demorou demais.', undefined, 'timeout');
     }
 
-    throw new WeatherServiceError('Falha de rede.');
+    if (didCancel || (error instanceof DOMException && error.name === 'AbortError')) {
+      throw new WeatherServiceError('A requisição foi cancelada.', undefined, 'cancelled');
+    }
+
+    throw new WeatherServiceError('Falha de rede.', undefined, 'network');
   } finally {
     clearTimeout(timeoutId);
     signal?.removeEventListener('abort', abortRequest);
@@ -163,6 +184,7 @@ export async function searchCities(name: string, signal?: AbortSignal): Promise<
     throw new WeatherServiceError(
       `Geocoding request failed with status ${response.status}.`,
       response.status,
+      'http',
     );
   }
 
@@ -170,11 +192,19 @@ export async function searchCities(name: string, signal?: AbortSignal): Promise<
   try {
     payload = (await response.json()) as unknown;
   } catch {
-    throw new WeatherServiceError('Geocoding response is not valid JSON.');
+    throw new WeatherServiceError(
+      'Geocoding response is not valid JSON.',
+      undefined,
+      'invalid-payload',
+    );
   }
 
   if (!isRecord(payload)) {
-    throw new WeatherServiceError('Geocoding response has an invalid format.');
+    throw new WeatherServiceError(
+      'Geocoding response has an invalid format.',
+      undefined,
+      'invalid-payload',
+    );
   }
 
   const geocodingResponse = payload as GeocodingResponse;
@@ -258,6 +288,7 @@ export async function getWeather(city: City, signal?: AbortSignal): Promise<Weat
     throw new WeatherServiceError(
       `Forecast request failed with status ${response.status}.`,
       response.status,
+      'http',
     );
   }
 
@@ -265,22 +296,30 @@ export async function getWeather(city: City, signal?: AbortSignal): Promise<Weat
   try {
     payload = (await response.json()) as unknown;
   } catch {
-    throw new WeatherServiceError('Forecast response is not valid JSON.');
+    throw new WeatherServiceError(
+      'Forecast response is not valid JSON.',
+      undefined,
+      'invalid-payload',
+    );
   }
 
   if (!isRecord(payload)) {
-    throw new WeatherServiceError('Forecast response has an invalid format.');
+    throw new WeatherServiceError(
+      'Forecast response has an invalid format.',
+      undefined,
+      'invalid-payload',
+    );
   }
 
   const forecast = payload as ForecastResponse;
   if (!isRecord(forecast.current) || !isRecord(forecast.daily)) {
-    throw new WeatherServiceError('Resposta de forecast incompleta.');
+    throw new WeatherServiceError('Resposta de forecast incompleta.', undefined, 'invalid-payload');
   }
 
   const current = mapCurrent(forecast.current as ForecastCurrent);
   const days = mapDaily(forecast.daily as ForecastDaily);
   if (!current || !days) {
-    throw new WeatherServiceError('Resposta de forecast incompleta.');
+    throw new WeatherServiceError('Resposta de forecast incompleta.', undefined, 'invalid-payload');
   }
 
   return {

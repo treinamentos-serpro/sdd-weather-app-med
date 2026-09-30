@@ -72,6 +72,30 @@ describe('useWeather', () => {
     expect(result.current.data?.city).toEqual(cityA);
   });
 
+  it('shows a friendly offline message and retries the last search', async () => {
+    searchCitiesMock.mockRejectedValueOnce(new TypeError('offline')).mockResolvedValueOnce([cityA]);
+    getWeatherMock.mockResolvedValue(weatherFor(cityA));
+
+    const { result } = renderHook(() => useWeather());
+
+    await act(async () => {
+      await result.current.search('Lisboa');
+    });
+
+    expect(result.current.status).toBe('error');
+    expect(result.current.error).toBe(
+      'Não foi possível conectar ao serviço de clima. Verifique sua conexão e tente novamente.',
+    );
+
+    act(() => {
+      result.current.retry();
+    });
+    await waitFor(() => expect(result.current.status).toBe('success'));
+
+    expect(searchCitiesMock).toHaveBeenCalledTimes(2);
+    expect(result.current.data?.city).toEqual(cityA);
+  });
+
   it('keeps the newest result when an older search resolves later', async () => {
     let resolveFirstSearch: ((cities: City[]) => void) | undefined;
     searchCitiesMock

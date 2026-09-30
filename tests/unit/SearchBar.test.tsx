@@ -16,6 +16,18 @@ describe('SearchBar', () => {
     expect(screen.getByRole('alert')).toHaveTextContent('Digite o nome de uma cidade');
   });
 
+  it('does not search when the input contains only spaces', async () => {
+    const user = userEvent.setup();
+    const onSearch = vi.fn();
+    render(<SearchBar onSearch={onSearch} />);
+
+    await user.type(screen.getByLabelText('Cidade'), '   ');
+    await user.click(screen.getByRole('button', { name: 'Buscar' }));
+
+    expect(onSearch).not.toHaveBeenCalled();
+    expect(screen.getByRole('alert')).toHaveTextContent('Digite o nome de uma cidade');
+  });
+
   it('searches with the trimmed input value', async () => {
     const user = userEvent.setup();
     const onSearch = vi.fn();

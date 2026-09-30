@@ -59,8 +59,8 @@ export default function SearchBar({ onSearch, disabled = false }: SearchBarProps
         )}
       </div>
       <button
-        className="rounded-xl bg-accent-500 px-5 py-3 font-semibold text-white transition hover:bg-accent-400 focus:outline-none focus:ring-2 focus:ring-accent-400 focus:ring-offset-2 focus:ring-offset-night-900 disabled:cursor-not-allowed disabled:opacity-60"
-        disabled={disabled}
+        aria-disabled={disabled}
+        className="rounded-xl bg-accent-500 px-5 py-3 font-semibold text-white transition hover:bg-accent-400 focus:outline-none focus:ring-2 focus:ring-accent-400 focus:ring-offset-2 focus:ring-offset-night-900 aria-disabled:cursor-not-allowed aria-disabled:opacity-60"
         type="submit"
       >
         Buscar

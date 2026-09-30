@@ -8,7 +8,11 @@ export function unitLabel(unit: Unit): string {
   return unit === 'fahrenheit' ? '°F' : '°C';
 }
 
-export function formatTemperature(valueCelsius: number, unit: Unit): string {
+export function formatTemperature(valueCelsius: number | undefined, unit: Unit): string {
+  if (valueCelsius === undefined || !Number.isFinite(valueCelsius)) {
+    return '—';
+  }
+
   const value = Math.round(convertTemperature(valueCelsius, unit));
   return `${value}${unitLabel(unit)}`;
 }

@@ -12,8 +12,8 @@ interface ForecastCardProps {
 export default function ForecastCard({ day, unit, timezone }: ForecastCardProps) {
   const condition = getWeatherCondition(day.weatherCode);
   const precipitation =
-    day.precipitationProbability === undefined
-      ? 'Não disponível'
+    day.precipitationProbability === undefined || !Number.isFinite(day.precipitationProbability)
+      ? '—'
       : `${day.precipitationProbability}%`;
 
   return (
